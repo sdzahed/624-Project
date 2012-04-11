@@ -1,0 +1,1 @@
+This project aims at developing a mechanism to ensure that a process can continue to execute correctly even when the Operating System is compromised and tries to meddle with the hardware state of a process.
