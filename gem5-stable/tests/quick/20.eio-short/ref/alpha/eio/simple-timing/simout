@@ -1,0 +1,16 @@
+M5 Simulator System
+
+Copyright (c) 2001-2008
+The Regents of The University of Michigan
+All Rights Reserved
+
+
+M5 compiled Apr 19 2011 11:52:53
+M5 started Apr 19 2011 11:58:24
+M5 executing on maize
+command line: build/ALPHA_SE/m5.fast -d build/ALPHA_SE/tests/fast/quick/20.eio-short/alpha/eio/simple-timing -re tests/run.py build/ALPHA_SE/tests/fast/quick/20.eio-short/alpha/eio/simple-timing
+Global frequency set at 1000000000000 ticks per second
+info: Entering event queue @ 0.  Starting simulation...
+main dictionary has 1245 entries
+49508 bytes wasted
+>Exiting @ tick 727929000 because a thread reached the max instruction count
