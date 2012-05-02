@@ -74,6 +74,8 @@ if env['TARGET_ISA'] == 'x86':
         DebugFlag('PageTableWalker', \
                   "Page table walker state machine debugging")
         DebugFlag('Faults', "Trace all faults/exceptions/traps")
+        DebugFlag('Zahed', "Zahed's debug")
+        DebugFlag('Zahed1', "Zahed's second debug")
 
         SimObject('X86LocalApic.py')
         SimObject('X86System.py')
