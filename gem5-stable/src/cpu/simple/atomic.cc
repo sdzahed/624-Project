@@ -42,6 +42,7 @@
 #include "params/AtomicSimpleCPU.hh"
 #include "sim/faults.hh"
 #include "sim/system.hh"
+#include "debug/Zahed1.hh"
 
 using namespace std;
 using namespace TheISA;
@@ -507,6 +508,7 @@ AtomicSimpleCPU::tick()
         if (_status == Idle)
             return;
 
+        bool restored = false;
         Fault fault = NoFault;
 
         TheISA::PCState pcState = thread->pcState();
@@ -562,7 +564,7 @@ AtomicSimpleCPU::tick()
                     traceData = NULL;
                 }
 
-                postExecute();
+                restored = postExecute();
             }
 
             // @todo remove me after debugging with legion done
@@ -588,7 +590,7 @@ AtomicSimpleCPU::tick()
             }
 
         }
-        if(fault != NoFault || !stayAtPC)
+        if(!restored && (fault != NoFault || !stayAtPC))
             advancePC(fault);
     }
 

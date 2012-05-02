@@ -58,6 +58,14 @@ namespace TheISA
 }
 class MemObject;
 
+namespace Trapframe {
+    struct TrapFrame {
+        TheISA::PCState pcState;
+        TheISA::CR3 cr3;
+        std::map<TheISA::IntRegIndex, TheISA::X86IntReg> intRegs;
+    };
+}
+
 #else
 
 class Process;
@@ -165,7 +173,7 @@ class BaseSimpleCPU : public BaseCPU
     void checkForInterrupts();
     void setupFetchRequest(Request *req);
     void preExecute();
-    void postExecute();
+    bool postExecute();
     void advancePC(Fault fault);
 
     virtual void deallocateContext(int thread_num);

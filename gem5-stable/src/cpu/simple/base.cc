@@ -82,8 +82,13 @@
 #include "mem/mem_object.hh"
 #endif // FULL_SYSTEM
 
+#include "debug/Zahed.hh"
+#include "debug/Zahed1.hh"
 using namespace std;
 using namespace TheISA;
+
+// to store/restore state
+std::map<CR3, Trapframe::TrapFrame *> tfs;
 
 BaseSimpleCPU::BaseSimpleCPU(BaseSimpleCPUParams *p)
     : BaseCPU(p), traceData(NULL), thread(NULL), predecoder(NULL)
@@ -320,6 +325,16 @@ BaseSimpleCPU::checkForInterrupts()
         if (interrupt != NoFault) {
             fetchOffset = 0;
             interrupts->updateIntrInfo(tc);
+
+            if (TheISA::inUserMode(tc)){
+                Trapframe::TrapFrame *tf = new Trapframe::TrapFrame();
+                tf->cr3 = tc->readMiscRegNoEffect(MISCREG_CR3);
+                tf->pcState = tc->pcState();
+                tf->intRegs[INTREG_EAX] = tc->readIntReg(INTREG_EAX);
+                DPRINTF(Zahed, "[0x%08x] Storing state on %s for CR3 [0x%08x] with pc [0x%08x] and eax [0x%08x]\n", tc, interrupt->name(), tf->cr3, tf->pcState.npc(), tf->intRegs[INTREG_EAX]);
+                tfs[tf->cr3] = tf;
+            }
+
             interrupt->invoke(tc);
             predecoder.reset();
         }
@@ -413,12 +428,21 @@ BaseSimpleCPU::preExecute()
                 curStaticInst->getName(), curStaticInst->machInst);
 #endif // TRACING_ON
     }
+
+    /*if (curMacroStaticInst && curMacroStaticInst->getName().compare("iret") == 0){
+        MiscReg cr3 = tc->readMiscRegNoEffect(MISCREG_CR3);
+        saved_tcs[cr3] = pcState;
+    }else if (curStaticInst && curStaticInst->getName().compare("iret") == 0){
+        MiscReg cr3 = tc->readMiscRegNoEffect(MISCREG_CR3);
+        saved_tcs[cr3] = pcState;
+    }*/
 }
 
-void
+bool
 BaseSimpleCPU::postExecute()
 {
     assert(curStaticInst);
+    bool restored = false;
 
     TheISA::PCState pc = tc->pcState();
     Addr instAddr = pc.instAddr();
@@ -485,6 +509,27 @@ BaseSimpleCPU::postExecute()
         delete traceData;
         traceData = NULL;
     }
+
+    if (curMacroStaticInst && curMacroStaticInst->getName().compare("iret") == 0 && curStaticInst->isLastMicroop() && TheISA::inUserMode(tc)){
+        //DPRINTF(Zahed1, "staticInst is %s\n", curStaticInst->getName().c_str());
+        TheISA::CR3 cr3 = tc->readMiscRegNoEffect(MISCREG_CR3);
+        Trapframe::TrapFrame *tf = tfs[cr3];
+        TheISA::PCState curPcState = tc->pcState();
+        curPcState.advance();
+        if(tf){
+            DPRINTF(Zahed, "Current State: npc [0x%08x] cr3 [0x%08x] eax [0x%08x]\n", tc->pcState().npc(), cr3, tc->readIntReg(INTREG_EAX));
+        }
+        if (tf && tc->pcState() != tf->pcState){
+            DPRINTF(Zahed, "[0x%08x] MacroInst Restoring state for CR3 [0x%08x] with npc [0x%08x] and eax [0x%08x]\n", tc, tf->cr3, tf->pcState.npc(), tf->intRegs[INTREG_EAX]);
+            tc->pcState(tf->pcState);
+            restored = true;
+        }else if(tf){
+            DPRINTF(Zahed, "[0x%08x] MacroInst Matched state for CR3 [0x%08x] with npc [0x%08x] and eax [0x%08x].\n", tc, tf->cr3, tf->pcState.npc(), tf->intRegs[INTREG_EAX]);
+        }
+        tfs.erase(cr3);
+        delete tf;
+    }
+    return restored;
 }
 
 
