@@ -519,7 +519,7 @@ BaseSimpleCPU::postExecute()
         if(tf){
             DPRINTF(Zahed, "Current State: npc [0x%08x] cr3 [0x%08x] eax [0x%08x]\n", tc->pcState().npc(), cr3, tc->readIntReg(INTREG_EAX));
         }
-        if (tf && tc->pcState() != tf->pcState){
+        if (tf && curPcState != tf->pcState){
             DPRINTF(Zahed, "[0x%08x] MacroInst Restoring state for CR3 [0x%08x] with npc [0x%08x] and eax [0x%08x]\n", tc, tf->cr3, tf->pcState.npc(), tf->intRegs[INTREG_EAX]);
             tc->pcState(tf->pcState);
             restored = true;
