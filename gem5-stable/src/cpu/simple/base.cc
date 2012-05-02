@@ -515,13 +515,19 @@ BaseSimpleCPU::postExecute()
         TheISA::CR3 cr3 = tc->readMiscRegNoEffect(MISCREG_CR3);
         Trapframe::TrapFrame *tf = tfs[cr3];
         TheISA::PCState curPcState = tc->pcState();
-        curPcState.advance();
         if(tf){
-            DPRINTF(Zahed, "Current State: npc [0x%08x] cr3 [0x%08x] eax [0x%08x]\n", tc->pcState().npc(), cr3, tc->readIntReg(INTREG_EAX));
+            DPRINTF(Zahed, "Current State now: pc [0x%08x] npc [0x%08x] cr3 [0x%08x] eax [0x%08x]\n", curPcState.pc(), curPcState.npc(), cr3, tc->readIntReg(INTREG_EAX));
+        }
+        TheISA::advancePC(curPcState, curStaticInst);
+        //curPcState.advance();
+        if(tf){
+            DPRINTF(Zahed, "Current State adv: pc [0x%08x] npc [0x%08x] cr3 [0x%08x] eax [0x%08x]\n", curPcState.pc(), curPcState.npc(), cr3, tc->readIntReg(INTREG_EAX));
         }
         if (tf && curPcState != tf->pcState){
-            DPRINTF(Zahed, "[0x%08x] MacroInst Restoring state for CR3 [0x%08x] with npc [0x%08x] and eax [0x%08x]\n", tc, tf->cr3, tf->pcState.npc(), tf->intRegs[INTREG_EAX]);
+            DPRINTF(Zahed, "Restoring state for CR3 [0x%08x] with pc [0x%08x] npc [0x%08x] and eax [0x%08x]\n", tf->cr3, tf->pcState.pc(), tf->pcState.npc(), tf->intRegs[INTREG_EAX]);
             tc->pcState(tf->pcState);
+            curMacroStaticInst = StaticInst::nullStaticInstPtr;
+            fetchOffset = 0;
             restored = true;
         }else if(tf){
             DPRINTF(Zahed, "[0x%08x] MacroInst Matched state for CR3 [0x%08x] with npc [0x%08x] and eax [0x%08x].\n", tc, tf->cr3, tf->pcState.npc(), tf->intRegs[INTREG_EAX]);

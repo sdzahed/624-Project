@@ -590,8 +590,14 @@ AtomicSimpleCPU::tick()
             }
 
         }
+
         if(!restored && (fault != NoFault || !stayAtPC))
             advancePC(fault);
+        else if (restored && fault != NoFault){
+            curMacroStaticInst = StaticInst::nullStaticInstPtr;
+            fault->invoke(tc, curStaticInst);
+            predecoder.reset();
+        }
     }
 
     // instruction takes at least one cycle
