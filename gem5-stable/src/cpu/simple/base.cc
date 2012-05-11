@@ -332,7 +332,7 @@ BaseSimpleCPU::checkForInterrupts()
                 tf->pcState = tc->pcState();
                 tf->intRegs[INTREG_EAX] = tc->readIntReg(INTREG_EAX);
                 tf->intRegs[INTREG_EDX] = tc->readIntReg(INTREG_EDX);
-                DPRINTF(Zahed, "[0x%08x] Storing state on %s for CR3 [0x%08x] with pc [0x%08x] and eax [0x%08x]\n", tc, interrupt->name(), tf->cr3, tf->pcState.npc(), tf->intRegs[INTREG_EDX]);
+                DPRINTF(Zahed, "[0x%08x] Storing state on %s for CR3 [0x%08x] with npc [0x%08x] and edx [0x%08x]\n", tc, interrupt->name(), tf->cr3, tf->pcState.npc(), tf->intRegs[INTREG_EDX]);
                 tfs[tf->cr3] = tf;
             }
 
@@ -429,14 +429,6 @@ BaseSimpleCPU::preExecute()
                 curStaticInst->getName(), curStaticInst->machInst);
 #endif // TRACING_ON
     }
-
-    /*if (curMacroStaticInst && curMacroStaticInst->getName().compare("iret") == 0){
-        MiscReg cr3 = tc->readMiscRegNoEffect(MISCREG_CR3);
-        saved_tcs[cr3] = pcState;
-    }else if (curStaticInst && curStaticInst->getName().compare("iret") == 0){
-        MiscReg cr3 = tc->readMiscRegNoEffect(MISCREG_CR3);
-        saved_tcs[cr3] = pcState;
-    }*/
 }
 
 bool
@@ -512,26 +504,26 @@ BaseSimpleCPU::postExecute()
     }
 
     if (curMacroStaticInst && curMacroStaticInst->getName().compare("iret") == 0 && curStaticInst->isLastMicroop() && TheISA::inUserMode(tc)){
-        //DPRINTF(Zahed1, "staticInst is %s\n", curStaticInst->getName().c_str());
         TheISA::CR3 cr3 = tc->readMiscRegNoEffect(MISCREG_CR3);
         Trapframe::TrapFrame *tf = tfs[cr3];
         TheISA::PCState curPcState = tc->pcState();
         if(tf){
-            DPRINTF(Zahed, "Current State now: pc [0x%08x] npc [0x%08x] cr3 [0x%08x] eax [0x%08x]\n", curPcState.pc(), curPcState.npc(), cr3, tc->readIntReg(INTREG_EDX));
+            DPRINTF(Zahed, "Current State now: pc [0x%08x] npc [0x%08x] cr3 [0x%08x] edx [0x%08x]\n", curPcState.pc(), curPcState.npc(), cr3, tc->readIntReg(INTREG_EDX));
         }
         TheISA::advancePC(curPcState, curStaticInst);
-        //curPcState.advance();
         if(tf){
-            DPRINTF(Zahed, "Current State adv: pc [0x%08x] npc [0x%08x] cr3 [0x%08x] eax [0x%08x]\n", curPcState.pc(), curPcState.npc(), cr3, tc->readIntReg(INTREG_EDX));
+            DPRINTF(Zahed, "Current State adv: pc [0x%08x] npc [0x%08x] cr3 [0x%08x] edx [0x%08x]\n", curPcState.pc(), curPcState.npc(), cr3, tc->readIntReg(INTREG_EDX));
         }
-        if (tf && (curPcState != tf->pcState || tc->readIntReg(INTREG_EDX) != tf->intRegs[INTREG_EDX])){
-            DPRINTF(Zahed, "Restoring state for CR3 [0x%08x] with pc [0x%08x] npc [0x%08x] and eax [0x%08x]\n", tf->cr3, tf->pcState.pc(), tf->pcState.npc(), tf->intRegs[INTREG_EDX]);
+        if (tf && (curPcState != tf->pcState)) {
+            DPRINTF(Zahed, "Restoring state for CR3 [0x%08x] with pc [0x%08x] npc [0x%08x] and edx [0x%08x]\n", tf->cr3, tf->pcState.pc(), tf->pcState.npc(), tf->intRegs[INTREG_EDX]);
             tc->pcState(tf->pcState);
+            tc->setIntReg(INTREG_EAX, tf->intRegs[INTREG_EAX]);
+            tc->setIntReg(INTREG_EDX, tf->intRegs[INTREG_EDX]);
             curMacroStaticInst = StaticInst::nullStaticInstPtr;
             fetchOffset = 0;
             restored = true;
         }else if(tf){
-            DPRINTF(Zahed, "[0x%08x] MacroInst Matched state for CR3 [0x%08x] with npc [0x%08x] and eax [0x%08x].\n", tc, tf->cr3, tf->pcState.npc(), tf->intRegs[INTREG_EDX]);
+            DPRINTF(Zahed, "[0x%08x] MacroInst Matched state for CR3 [0x%08x] with npc [0x%08x] and edx [0x%08x].\n", tc, tf->cr3, tf->pcState.npc(), tf->intRegs[INTREG_EDX]);
         }
         tfs.erase(cr3);
         delete tf;
